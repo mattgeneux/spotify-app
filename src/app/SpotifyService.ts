@@ -1,5 +1,5 @@
 import { ArtistsResponse } from "./types/artists";
-import { Token } from "./types/token";
+
 import { UserProfile } from "./types/userProfile";
 
 export async function getAccessToken(clientId: string, code: string): Promise<string> {
@@ -19,10 +19,11 @@ export async function getAccessToken(clientId: string, code: string): Promise<st
     });
 
     if (result.ok) {
-        const { access_token } = await result.json();
+        const { access_token, refresh_token } = await result.json();
         const timeNow = Date.now();
-        const token: Token = { value: access_token, time: timeNow }
-        localStorage.setItem("token", JSON.stringify(token))
+        localStorage.setItem("access_token", access_token)
+        localStorage.setItem("token_time", timeNow.toString())
+        localStorage.setItem("refresh_token", refresh_token)
         return access_token;
     }
     else {
@@ -30,6 +31,42 @@ export async function getAccessToken(clientId: string, code: string): Promise<st
     }
 
 
+}
+
+export const getRefreshToken = async (clientId: string): Promise<string> => {
+
+    // refresh token that has been previously stored
+    const refreshToken = localStorage.getItem('refresh_token');
+
+    if (refreshToken == null || refreshToken == "undefined") {
+        return Promise.reject();
+    }
+    const url = "https://accounts.spotify.com/api/token";
+
+    const payload = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+            grant_type: 'refresh_token',
+            refresh_token: refreshToken,
+            client_id: clientId
+        }),
+    }
+    const body = await fetch(url, payload);
+    const response: tokenResponse = await body.json();
+    console.log(response);
+    const timeNow = Date.now();
+
+    localStorage.setItem("access_token", response.access_token)
+    localStorage.setItem("token_time", timeNow.toString())
+
+    if (response.refresh_token) {
+        localStorage.setItem('refresh_token', response.refresh_token);
+    }
+
+    return response.access_token;
 }
 
 
@@ -89,4 +126,14 @@ async function generateCodeChallenge(codeVerifier: string) {
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
         .replace(/=+$/, '');
+}
+
+export interface tokenResponse {
+
+    access_token: string,
+    token_type: string,
+    expires_in: number,
+    refresh_token: string,
+    scope: string
+
 }

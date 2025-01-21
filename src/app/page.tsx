@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 import { Artist, ArtistsResponse } from "./types/artists";
 import { useSearchParams } from 'next/navigation'
 import { UserProfile } from "./types/userProfile";
-import { fetchArtists, fetchProfile, getAccessToken, redirectToAuthCodeFlow } from "./SpotifyService";
-import { Token } from "./types/token";
+import { fetchArtists, fetchProfile, getAccessToken, getRefreshToken, redirectToAuthCodeFlow } from "./SpotifyService";
+
 
 export default function Home() {
 
@@ -18,52 +18,28 @@ export default function Home() {
   const code = params.get("code");
   useEffect(() => {
     if (!code) {
-      console.log("before", clientId)
-      redirectToAuthCodeFlow(clientId);
 
+      redirectToAuthCodeFlow(clientId);
 
     } else {
 
-      const rawToken = localStorage.getItem("token")
-      console.log("raw token", rawToken)
-      if (rawToken !== null && rawToken !== "undefined") {
+      const access_token = localStorage.getItem("access_token");
 
-        let token;
-        try {
-          token = JSON.parse(rawToken) as Token;
-        }
-        catch {
-          console.log("token is broken")
-          localStorage.removeItem("token")
-          redirectToAuthCodeFlow(clientId);
-          return;
-        }
+      if (access_token !== null && access_token !== "undefined") {
 
-        console.log("token found", token)
-        if (Date.now() - token.time < (3600 * 1000)) {
+        const token_time = Number.parseInt(localStorage.getItem("token_time")!);
+
+        if (Date.now() - token_time < (3600 * 1000)) {
           console.log("stored token is ok")
-          fetchProfile(token.value).then(p => setProfile(p))
-          fetchArtists(token.value).then(a => setArtists(a.items));
+          updateProfile(access_token);
         }
         else {
-          // refresh token?
-          // getAccessToken(clientId, code).then(async t => {
-          //   console.log("fetch artists")
-          //   await fetchArtists(t).then(a => setArtists(a.items));
-          //   console.log("fetch profile")
-          //   await fetchProfile(t).then(p => setProfile(p));
-
-          // })
-          console.log("stored token has expired")
-          localStorage.removeItem("token")
-          redirectToAuthCodeFlow(clientId);
+          getRefreshToken(clientId).then(t => updateProfile(t), error => redirectToAuthCodeFlow(clientId))
         }
 
       }
       else {
         console.log("token not found")
-
-
         getAccessToken(clientId, code).then(async t => {
           console.log("fetch artists")
           await fetchArtists(t).then(a => setArtists(a.items));
@@ -74,14 +50,14 @@ export default function Home() {
           error =>
             redirectToAuthCodeFlow(clientId)
         )
-
-
-
       }
-
     }
   }, [code])
 
+  const updateProfile = (token: string) => {
+    fetchProfile(token).then(p => setProfile(p))
+    fetchArtists(token).then(a => setArtists(a.items));
+  }
 
 
   return (
