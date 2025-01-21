@@ -5,13 +5,18 @@ import { useEffect, useState } from "react";
 import { Artist, ArtistsResponse } from "./types/artists";
 import { useSearchParams } from 'next/navigation'
 import { UserProfile } from "./types/userProfile";
-import { fetchArtists, fetchProfile, getAccessToken, getRefreshToken, redirectToAuthCodeFlow } from "./SpotifyService";
+import { fetchArtists, fetchProfile, fetchTracks, getAccessToken, getRefreshToken, redirectToAuthCodeFlow } from "./api/SpotifyService";
+import { ArtistSummary } from "./components/ArtistSummary";
+import { UserSummary } from "./components/UserSummary";
+import { Track } from "./types/Tracks";
+import { TrackSummary } from "./components/TrackSummary";
 
 
 export default function Home() {
 
   const [profile, setProfile] = useState<UserProfile>();
   const [artists, setArtists] = useState<Artist[]>();
+  const [tracks, setTracks] = useState<Track[]>();
 
   const clientId = process.env.CLIENT_ID ?? "63c3056b9f1843729d26ad0fe8a21fcf";
   const params = useSearchParams();
@@ -57,29 +62,37 @@ export default function Home() {
   const updateProfile = (token: string) => {
     fetchProfile(token).then(p => setProfile(p))
     fetchArtists(token).then(a => setArtists(a.items));
+    fetchTracks(token).then(t => setTracks(t.items))
   }
 
 
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <div>
-          <img src={profile?.images[0]?.url} />
-          <div className="mb-2">
-            {profile?.display_name}
-          </div>
-          <div className="mb-2">
-            {profile?.email}
-          </div>
-        </div>
-        <ol className="list-decimal">
+    <div className="min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+      <main className="flex flex-col gap-8">
+
+        {
+          profile ? <UserSummary {...profile}></UserSummary> : <></>
+        }
+
+        <h1>Top Artists</h1>
+        <ul>
           {
             artists?.slice(0, 5).map((a, i) =>
               <li key={i} className="mb-2">
-                <a href={`/artist/${a.id}`}>{a.name}</a>
+                <ArtistSummary {...a}></ArtistSummary>
               </li>)
           }
-        </ol>
+        </ul>
+
+        <h1>Top Songs</h1>
+        <ul>
+          {
+            tracks?.slice(0, 10).map((a, i) =>
+              <li key={i} className="mb-2">
+                <TrackSummary {...a}></TrackSummary>
+              </li>)
+          }
+        </ul>
 
 
 

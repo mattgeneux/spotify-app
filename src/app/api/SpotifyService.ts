@@ -1,6 +1,7 @@
-import { ArtistsResponse } from "./types/artists";
+import { ArtistsResponse } from "../types/artists";
+import { TracksResponse } from "../types/Tracks";
 
-import { UserProfile } from "./types/userProfile";
+import { UserProfile } from "../types/userProfile";
 
 export async function getAccessToken(clientId: string, code: string): Promise<string> {
     const verifier = localStorage.getItem("verifier");
@@ -83,6 +84,16 @@ export async function fetchProfile(token: string): Promise<UserProfile> {
 
 export async function fetchArtists(token: string): Promise<ArtistsResponse> {
     const result = await fetch("https://api.spotify.com/v1/me/top/artists", {
+        method: "GET", headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const artists = await result.json();
+    console.log(artists)
+    return await artists
+}
+
+export async function fetchTracks(token: string): Promise<TracksResponse> {
+    const result = await fetch("https://api.spotify.com/v1/me/top/tracks", {
         method: "GET", headers: { Authorization: `Bearer ${token}` }
     });
 
