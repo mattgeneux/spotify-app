@@ -5,65 +5,46 @@ import { useEffect, useState } from "react";
 import { Artist, ArtistsResponse } from "./types/artists";
 import { useSearchParams } from 'next/navigation'
 import { UserProfile } from "./types/userProfile";
-import { fetchArtists, fetchProfile, getAccessToken, redirectToAuthCodeFlow } from "./SpotifyService";
-import { Token } from "./types/token";
+import { fetchArtists, fetchProfile, fetchTracks, getAccessToken, getRefreshToken, redirectToAuthCodeFlow } from "./api/SpotifyService";
+import { ArtistSummary } from "./components/ArtistSummary";
+import { UserSummary } from "./components/UserSummary";
+import { Track } from "./types/Tracks";
+import { TrackSummary } from "./components/TrackSummary";
+
 
 export default function Home() {
 
   const [profile, setProfile] = useState<UserProfile>();
   const [artists, setArtists] = useState<Artist[]>();
+  const [tracks, setTracks] = useState<Track[]>();
 
   const clientId = process.env.CLIENT_ID ?? "63c3056b9f1843729d26ad0fe8a21fcf";
   const params = useSearchParams();
   const code = params.get("code");
   useEffect(() => {
     if (!code) {
-      console.log("before", clientId)
-      redirectToAuthCodeFlow(clientId);
 
+      redirectToAuthCodeFlow(clientId);
 
     } else {
 
-      const rawToken = localStorage.getItem("token")
-      console.log("raw token", rawToken)
-      if (rawToken !== null && rawToken !== "undefined") {
+      const access_token = localStorage.getItem("access_token");
 
-        let token;
-        try {
-          token = JSON.parse(rawToken) as Token;
-        }
-        catch {
-          console.log("token is broken")
-          localStorage.removeItem("token")
-          redirectToAuthCodeFlow(clientId);
-          return;
-        }
+      if (access_token !== null && access_token !== "undefined") {
 
-        console.log("token found", token)
-        if (Date.now() - token.time < (3600 * 1000)) {
+        const token_time = Number.parseInt(localStorage.getItem("token_time")!);
+
+        if (Date.now() - token_time < (3600 * 1000)) {
           console.log("stored token is ok")
-          fetchProfile(token.value).then(p => setProfile(p))
-          fetchArtists(token.value).then(a => setArtists(a.items));
+          updateProfile(access_token);
         }
         else {
-          // refresh token?
-          // getAccessToken(clientId, code).then(async t => {
-          //   console.log("fetch artists")
-          //   await fetchArtists(t).then(a => setArtists(a.items));
-          //   console.log("fetch profile")
-          //   await fetchProfile(t).then(p => setProfile(p));
-
-          // })
-          console.log("stored token has expired")
-          localStorage.removeItem("token")
-          redirectToAuthCodeFlow(clientId);
+          getRefreshToken(clientId).then(t => updateProfile(t), error => redirectToAuthCodeFlow(clientId))
         }
 
       }
       else {
         console.log("token not found")
-
-
         getAccessToken(clientId, code).then(async t => {
           console.log("fetch artists")
           await fetchArtists(t).then(a => setArtists(a.items));
@@ -74,36 +55,44 @@ export default function Home() {
           error =>
             redirectToAuthCodeFlow(clientId)
         )
-
-
-
       }
-
     }
   }, [code])
 
+  const updateProfile = (token: string) => {
+    fetchProfile(token).then(p => setProfile(p))
+    fetchArtists(token).then(a => setArtists(a.items));
+    fetchTracks(token).then(t => setTracks(t.items))
+  }
 
 
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <div>
-          <img src={profile?.images[0]?.url} />
-          <div className="mb-2">
-            {profile?.display_name}
-          </div>
-          <div className="mb-2">
-            {profile?.email}
-          </div>
-        </div>
-        <ol className="list-decimal">
+    <div className="min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+      <main className="flex flex-col gap-8">
+
+        {
+          profile ? <UserSummary {...profile}></UserSummary> : <></>
+        }
+
+        <h1>Top Artists</h1>
+        <ul>
           {
             artists?.slice(0, 5).map((a, i) =>
               <li key={i} className="mb-2">
-                <a href={`/artist/${a.id}`}>{a.name}</a>
+                <ArtistSummary {...a}></ArtistSummary>
               </li>)
           }
-        </ol>
+        </ul>
+
+        <h1>Top Songs</h1>
+        <ul>
+          {
+            tracks?.slice(0, 10).map((a, i) =>
+              <li key={i} className="mb-2">
+                <TrackSummary {...a}></TrackSummary>
+              </li>)
+          }
+        </ul>
 
 
 
