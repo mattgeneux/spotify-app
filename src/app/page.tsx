@@ -32,8 +32,7 @@ export default function Home() {
         try {
           token = JSON.parse(rawToken) as Token;
         }
-        catch
-        {
+        catch {
           console.log("token is broken")
           localStorage.removeItem("token")
           redirectToAuthCodeFlow(clientId);
@@ -56,6 +55,7 @@ export default function Home() {
 
           // })
           console.log("stored token has expired")
+          localStorage.removeItem("token")
           redirectToAuthCodeFlow(clientId);
         }
 
