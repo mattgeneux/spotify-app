@@ -16,7 +16,7 @@ import { TopArtists } from "./components/TopArtists";
 export default function Home() {
 
   const [profile, setProfile] = useState<UserProfile>();
-  const [artists, setArtists] = useState<Artist[]>();
+  const [artists, setArtists] = useState<{ artists: Artist[], range: FetchRange }>();
   const [tracks, setTracks] = useState<Track[]>();
 
   const clientId = process.env.CLIENT_ID ?? "63c3056b9f1843729d26ad0fe8a21fcf";
@@ -64,23 +64,23 @@ export default function Home() {
 
   const updateProfile = (token: string) => {
     fetchProfile(token).then(p => setProfile(p))
-    fetchArtists(token, FetchRange.FOUR_WEEKS).then(a => setArtists(a.items));
+    fetchArtists(token, FetchRange.FOUR_WEEKS).then(a => setArtists({ artists: a.items, range: FetchRange.FOUR_WEEKS }));
     fetchTracks(token).then(t => setTracks(t.items))
   }
 
-  const updateArists = async () => {
-    await findToken()
+  const updateArists = async (range: FetchRange) => {
+    await findToken().then(t => fetchArtists(t, range)).then(a => setArtists({ artists: a.items, range }));
   }
 
   return (
     <div className="min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8">
+      <main className="flex flex-col gap-8 ">
 
         {
           profile ? <UserSummary {...profile}></UserSummary> : <></>
         }
 
-        <TopArtists artists={artists} callback={() => updateArists()} />
+        <TopArtists artists={artists} callback={(range: FetchRange) => updateArists(range)} />
 
         <h1>Top Songs</h1>
         <ul>
