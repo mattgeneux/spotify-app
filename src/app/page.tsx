@@ -5,11 +5,12 @@ import { useEffect, useState } from "react";
 import { Artist, ArtistsResponse } from "./types/artists";
 import { useSearchParams } from 'next/navigation'
 import { UserProfile } from "./types/userProfile";
-import { fetchArtists, fetchProfile, fetchTracks, getAccessToken, getRefreshToken, redirectToAuthCodeFlow } from "./api/SpotifyService";
+import { fetchArtists, fetchProfile, FetchRange, fetchTracks, getAccessToken, getRefreshToken, redirectToAuthCodeFlow } from "./api/SpotifyService";
 import { ArtistSummary } from "./components/ArtistSummary";
 import { UserSummary } from "./components/UserSummary";
 import { Track } from "./types/Tracks";
 import { TrackSummary } from "./components/TrackSummary";
+import { TopArtists } from "./components/TopArtists";
 
 
 export default function Home() {
@@ -28,43 +29,48 @@ export default function Home() {
 
     } else {
 
-      const access_token = localStorage.getItem("access_token");
-
-      if (access_token !== null && access_token !== "undefined") {
-
-        const token_time = Number.parseInt(localStorage.getItem("token_time")!);
-
-        if (Date.now() - token_time < (3600 * 1000)) {
-          console.log("stored token is ok")
-          updateProfile(access_token);
-        }
-        else {
-          getRefreshToken(clientId).then(t => updateProfile(t), error => redirectToAuthCodeFlow(clientId))
+      findToken().then(t => updateProfile(t), reject => getAccessToken(clientId, code).then(async t => t,
+        error => {
+          redirectToAuthCodeFlow(clientId);
+          return Promise.reject();
         }
 
-      }
-      else {
-        console.log("token not found")
-        getAccessToken(clientId, code).then(async t => {
-          console.log("fetch artists")
-          await fetchArtists(t).then(a => setArtists(a.items));
-          console.log("fetch profile")
-          await fetchProfile(t).then(p => setProfile(p));
-
-        },
-          error =>
-            redirectToAuthCodeFlow(clientId)
-        )
-      }
+      ))
     }
   }, [code])
 
+  const findToken = async (): Promise<string> => {
+    const access_token = localStorage.getItem("access_token");
+
+    if (access_token !== null && access_token !== "undefined") {
+
+      const token_time = Number.parseInt(localStorage.getItem("token_time")!);
+
+      if (Date.now() - token_time < (3600 * 1000)) {
+        return access_token
+      }
+      else {
+        return await getRefreshToken(clientId)
+      }
+
+    }
+    else {
+      console.log("token not found")
+      return Promise.reject();
+
+    }
+  }
+
+
   const updateProfile = (token: string) => {
     fetchProfile(token).then(p => setProfile(p))
-    fetchArtists(token).then(a => setArtists(a.items));
+    fetchArtists(token, FetchRange.FOUR_WEEKS).then(a => setArtists(a.items));
     fetchTracks(token).then(t => setTracks(t.items))
   }
 
+  const updateArists = async () => {
+    await findToken()
+  }
 
   return (
     <div className="min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
@@ -74,15 +80,7 @@ export default function Home() {
           profile ? <UserSummary {...profile}></UserSummary> : <></>
         }
 
-        <h1>Top Artists</h1>
-        <ul>
-          {
-            artists?.slice(0, 5).map((a, i) =>
-              <li key={i} className="mb-2">
-                <ArtistSummary {...a}></ArtistSummary>
-              </li>)
-          }
-        </ul>
+        <TopArtists artists={artists} callback={() => updateArists()} />
 
         <h1>Top Songs</h1>
         <ul>
