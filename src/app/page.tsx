@@ -10,14 +10,14 @@ import { ArtistSummary } from "./components/ArtistSummary";
 import { UserSummary } from "./components/UserSummary";
 import { Track } from "./types/Tracks";
 import { TrackSummary } from "./components/TrackSummary";
-import { TopArtists } from "./components/TopArtists";
+import { TopItems } from "./components/TopItems";
 
 
 export default function Home() {
 
   const [profile, setProfile] = useState<UserProfile>();
-  const [artists, setArtists] = useState<{ artists: Artist[], range: FetchRange }>();
-  const [tracks, setTracks] = useState<Track[]>();
+  const [items, setItems] = useState<{ artists?: Artist[], tracks?: Track[], range?: FetchRange }>();
+
 
   const clientId = process.env.CLIENT_ID ?? "63c3056b9f1843729d26ad0fe8a21fcf";
   const params = useSearchParams();
@@ -64,12 +64,16 @@ export default function Home() {
 
   const updateProfile = (token: string) => {
     fetchProfile(token).then(p => setProfile(p))
-    fetchArtists(token, FetchRange.FOUR_WEEKS).then(a => setArtists({ artists: a.items, range: FetchRange.FOUR_WEEKS }));
-    fetchTracks(token).then(t => setTracks(t.items))
+    fetchArtists(token, FetchRange.FOUR_WEEKS).then(a => setItems(prev => ({ ...prev, artists: a.items, range: FetchRange.FOUR_WEEKS })));
+    fetchTracks(token, FetchRange.FOUR_WEEKS).then(t => setItems(prev => ({ ...prev, tracks: t.items })))
   }
 
-  const updateArists = async (range: FetchRange) => {
-    await findToken().then(t => fetchArtists(t, range)).then(a => setArtists({ artists: a.items, range }));
+  const updateItems = async (range: FetchRange) => {
+    const token = await findToken();
+    const artistsResponse = await fetchArtists(token, range);
+    const tracksResponse = await fetchTracks(token, range);
+    setItems({ artists: artistsResponse.items, tracks: tracksResponse.items, range })
+
   }
 
   return (
@@ -80,19 +84,7 @@ export default function Home() {
           profile ? <UserSummary {...profile}></UserSummary> : <></>
         }
 
-        <TopArtists artists={artists} callback={(range: FetchRange) => updateArists(range)} />
-
-        <h1>Top Songs</h1>
-        <ul>
-          {
-            tracks?.slice(0, 10).map((a, i) =>
-              <li key={i} className="mb-2">
-                <TrackSummary {...a}></TrackSummary>
-              </li>)
-          }
-        </ul>
-
-
+        <TopItems items={items} callback={(range: FetchRange) => updateItems(range)} />
 
       </main>
       <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">

@@ -95,8 +95,10 @@ export async function fetchArtists(token: string, range: FetchRange): Promise<Ar
     return await artists
 }
 
-export async function fetchTracks(token: string): Promise<TracksResponse> {
-    const result = await fetch("https://api.spotify.com/v1/me/top/tracks", {
+export async function fetchTracks(token: string, range: FetchRange): Promise<TracksResponse> {
+    const params = new URLSearchParams();
+    params.append("time_range", range);
+    const result = await fetch("https://api.spotify.com/v1/me/top/tracks?" + params.toString(), {
         method: "GET", headers: { Authorization: `Bearer ${token}` }
     });
 

@@ -7,6 +7,7 @@ export const TrackSummary = (track: Track) => {
         </div>
         <div className="">
             <h1>{track.name}</h1>
+            <h2>{track.artists.map(a => a.name).join(", ")}</h2>
         </div>
 
     </div>)
