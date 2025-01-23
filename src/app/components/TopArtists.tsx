@@ -1,4 +1,4 @@
-import { FetchRange } from "../api/SpotifyService";
+import { FetchRange } from "../service/SpotifyService";
 import { Artist } from "../types/artists";
 import { ArtistSummary } from "./ArtistSummary";
 

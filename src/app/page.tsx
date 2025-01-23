@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Artist, ArtistsResponse } from "./types/artists";
 import { useSearchParams } from 'next/navigation'
 import { UserProfile } from "./types/userProfile";
-import { fetchArtists, fetchProfile, FetchRange, fetchTracks, getAccessToken, getRefreshToken, redirectToAuthCodeFlow } from "./api/SpotifyService";
+import { fetchArtists, fetchProfile, FetchRange, fetchTracks, getAccessToken, getRefreshToken, redirectToAuthCodeFlow } from "./service/SpotifyService";
 import { ArtistSummary } from "./components/ArtistSummary";
 import { UserSummary } from "./components/UserSummary";
 import { Track } from "./types/Tracks";
