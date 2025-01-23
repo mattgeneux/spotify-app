@@ -6,9 +6,9 @@ export const ArtistSummary = (artist: Artist) => {
         <div className="me-5">
             <img src={artist.images[0].url} height="75" width="75" />
         </div>
-        <div className="">
-            <h1>{artist.name}</h1>
-            <h2>{artist.followers.total.toLocaleString()} followers</h2></div>
+        <div className="flex flex-col">
+            <div>{artist.name}</div>
+            <div>{artist.followers.total.toLocaleString()} followers</div></div>
 
     </div>)
 

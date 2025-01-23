@@ -82,9 +82,12 @@ export async function fetchProfile(token: string): Promise<UserProfile> {
     return await profile
 }
 
-export async function fetchArtists(token: string): Promise<ArtistsResponse> {
-    const result = await fetch("https://api.spotify.com/v1/me/top/artists", {
-        method: "GET", headers: { Authorization: `Bearer ${token}` }
+export async function fetchArtists(token: string, range: FetchRange): Promise<ArtistsResponse> {
+
+    const params = new URLSearchParams();
+    params.append("time_range", range);
+    const result = await fetch("https://api.spotify.com/v1/me/top/artists?" + params.toString(), {
+        method: "GET", headers: { Authorization: `Bearer ${token}` },
     });
 
     const artists = await result.json();
@@ -92,8 +95,10 @@ export async function fetchArtists(token: string): Promise<ArtistsResponse> {
     return await artists
 }
 
-export async function fetchTracks(token: string): Promise<TracksResponse> {
-    const result = await fetch("https://api.spotify.com/v1/me/top/tracks", {
+export async function fetchTracks(token: string, range: FetchRange): Promise<TracksResponse> {
+    const params = new URLSearchParams();
+    params.append("time_range", range);
+    const result = await fetch("https://api.spotify.com/v1/me/top/tracks?" + params.toString(), {
         method: "GET", headers: { Authorization: `Bearer ${token}` }
     });
 
@@ -147,4 +152,10 @@ export interface tokenResponse {
     refresh_token: string,
     scope: string
 
+}
+
+export enum FetchRange {
+    FOUR_WEEKS = "short_term",
+    SIX_MONTHS = "medium_term",
+    ONE_YEAR = "long_term"
 }
