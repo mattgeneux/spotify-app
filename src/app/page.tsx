@@ -2,14 +2,12 @@
 import { access } from "fs";
 
 import { useEffect, useState } from "react";
-import { Artist, ArtistsResponse } from "./types/artists";
+import { Artist } from "./types/artists";
 import { useSearchParams } from 'next/navigation'
 import { UserProfile } from "./types/userProfile";
-import { fetchArtists, fetchProfile, FetchRange, fetchTracks, getAccessToken, getRefreshToken, redirectToAuthCodeFlow } from "./service/SpotifyService";
-import { ArtistSummary } from "./components/ArtistSummary";
+import { fetchArtists, fetchProfile, FetchRange, fetchTracks, fetchAccessToken, fetchRefreshToken, redirectToAuthCodeFlow } from "./service/SpotifyService";
 import { UserSummary } from "./components/UserSummary";
 import { Track } from "./types/Tracks";
-import { TrackSummary } from "./components/TrackSummary";
 import { TopItems } from "./components/TopItems";
 
 
@@ -36,7 +34,7 @@ export default function Home() {
 
     } else {
 
-      findToken().then(t => updateProfile(t), reject => getAccessToken(clientId, code).then(async t => t,
+      findToken().then(t => updateProfile(t), reject => fetchAccessToken(clientId, code).then(async t => t,
         error => {
           redirectToAuthCodeFlow(clientId);
           return Promise.reject();
@@ -57,7 +55,7 @@ export default function Home() {
         return access_token
       }
       else {
-        return await getRefreshToken(clientId)
+        return await fetchRefreshToken(clientId)
       }
 
     }

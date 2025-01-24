@@ -2,8 +2,13 @@ import { ArtistsResponse } from "../types/artists";
 import { TracksResponse } from "../types/Tracks";
 
 import { UserProfile } from "../types/userProfile";
-
-export async function getAccessToken(clientId: string, code: string): Promise<string> {
+/**
+ * Use code from URL to get initial accesss token and refresh token
+ * @param clientId 
+ * @param code 
+ * @returns a Promise for the access token string
+ */
+export async function fetchAccessToken(clientId: string, code: string): Promise<string> {
     const verifier = localStorage.getItem("verifier");
 
     const params = new URLSearchParams();
@@ -33,8 +38,12 @@ export async function getAccessToken(clientId: string, code: string): Promise<st
 
 
 }
-
-export const getRefreshToken = async (clientId: string): Promise<string> => {
+/**
+ * Use the stored refresh token to get a new access token and refresh token
+ * @param clientId 
+ * @returns new access token
+ */
+export const fetchRefreshToken = async (clientId: string): Promise<string> => {
 
     // refresh token that has been previously stored
     const refreshToken = localStorage.getItem('refresh_token');
