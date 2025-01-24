@@ -16,7 +16,14 @@ import { TopItems } from "./components/TopItems";
 export default function Home() {
 
   const [profile, setProfile] = useState<UserProfile>();
-  const [items, setItems] = useState<{ artists?: Artist[], tracks?: Track[], range?: FetchRange }>();
+  const [state, setState] = useState<Record<FetchRange, { artists: Artist[], tracks: Track[] }>>({
+    [FetchRange.FOUR_WEEKS]: { artists: [], tracks: [] },
+    [FetchRange.SIX_MONTHS]: { artists: [], tracks: [] },
+    [FetchRange.ONE_YEAR]: { artists: [], tracks: [] },
+  }
+
+  )
+  const [selectedRange, setSelectedRange] = useState<FetchRange>(FetchRange.FOUR_WEEKS);
 
 
   const clientId = process.env.CLIENT_ID ?? "63c3056b9f1843729d26ad0fe8a21fcf";
@@ -62,18 +69,30 @@ export default function Home() {
   }
 
 
-  const updateProfile = (token: string) => {
+  const updateProfile = async (token: string) => {
     fetchProfile(token).then(p => setProfile(p))
-    fetchArtists(token, FetchRange.FOUR_WEEKS).then(a => setItems(prev => ({ ...prev, artists: a.items, range: FetchRange.FOUR_WEEKS })));
-    fetchTracks(token, FetchRange.FOUR_WEEKS).then(t => setItems(prev => ({ ...prev, tracks: t.items })))
+    updateItems(token, selectedRange);
   }
 
-  const updateItems = async (range: FetchRange) => {
-    const token = await findToken();
-    const artistsResponse = await fetchArtists(token, range);
-    const tracksResponse = await fetchTracks(token, range);
-    setItems({ artists: artistsResponse.items, tracks: tracksResponse.items, range })
+  const updateItems = async (token: string, range: FetchRange) => {
+    setSelectedRange(range);
+    if (state[range].artists.length == 0 || state[range].tracks.length == 0) {
+      const artistsResponse = await fetchArtists(token, range);
+      const tracksResponse = await fetchTracks(token, range);
+      updateState(range, artistsResponse.items, tracksResponse.items);
+    }
 
+
+  }
+
+  const updateState = (range: FetchRange, artists: Artist[], tracks: Track[]) => {
+    setState(prevState => ({
+      ...prevState,
+      [range]: {
+        artists,
+        tracks,
+      },
+    }));
   }
 
   return (
@@ -84,7 +103,7 @@ export default function Home() {
           profile ? <UserSummary {...profile}></UserSummary> : <></>
         }
 
-        <TopItems items={items} callback={(range: FetchRange) => updateItems(range)} />
+        <TopItems items={{ range: selectedRange, ...state[selectedRange] }} callback={(range: FetchRange) => findToken().then(t => updateItems(t, range))} />
 
       </main>
       <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
