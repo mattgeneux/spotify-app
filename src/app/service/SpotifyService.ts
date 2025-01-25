@@ -1,6 +1,6 @@
 import { ArtistsResponse } from "../types/artists";
 import { TracksResponse } from "../types/Tracks";
-
+import { redirect } from 'next/navigation'
 import { UserProfile } from "../types/userProfile";
 /**
  * Use code from URL to get initial accesss token and refresh token
@@ -91,7 +91,7 @@ export async function fetchProfile(token: string): Promise<UserProfile> {
     return await profile
 }
 
-export async function fetchArtists(token: string, range: FetchRange): Promise<ArtistsResponse> {
+export async function fetchArtists(token: string, range: ItemsRange): Promise<ArtistsResponse> {
 
     const params = new URLSearchParams();
     params.append("time_range", range);
@@ -104,7 +104,7 @@ export async function fetchArtists(token: string, range: FetchRange): Promise<Ar
     return await artists
 }
 
-export async function fetchTracks(token: string, range: FetchRange): Promise<TracksResponse> {
+export async function fetchTracks(token: string, range: ItemsRange): Promise<TracksResponse> {
     const params = new URLSearchParams();
     params.append("time_range", range);
     const result = await fetch("https://api.spotify.com/v1/me/top/tracks?" + params.toString(), {
@@ -130,8 +130,8 @@ export async function redirectToAuthCodeFlow(clientId: string) {
     params.append("scope", "user-read-private user-read-email user-top-read");
     params.append("code_challenge_method", "S256");
     params.append("code_challenge", challenge);
+    redirect(`https://accounts.spotify.com/authorize?${params.toString()}`);
 
-    document.location = `https://accounts.spotify.com/authorize?${params.toString()}`;
 }
 
 function generateCodeVerifier(length: number) {
@@ -163,7 +163,7 @@ export interface tokenResponse {
 
 }
 
-export enum FetchRange {
+export enum ItemsRange {
     FOUR_WEEKS = "short_term",
     SIX_MONTHS = "medium_term",
     ONE_YEAR = "long_term"

@@ -6,8 +6,8 @@ export const TrackSummary = (track: Track) => {
             <img src={track.album.images[0].url} height="75" width="75" />
         </div>
         <div className="flex flex-col">
-            <div>{track.name}</div>
-            <div>{track.artists.map(a => a.name).join(", ")}</div>
+            <div className="text-xl">{track.name}</div>
+            <div className="text-base">{track.artists.map(a => a.name).join(", ")}</div>
         </div>
 
     </div>)
