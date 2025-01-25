@@ -2,21 +2,26 @@
 import { access } from "fs";
 
 import { useEffect, useState } from "react";
-import { Artist, ArtistsResponse } from "./types/artists";
+import { Artist } from "./types/artists";
 import { useSearchParams } from 'next/navigation'
 import { UserProfile } from "./types/userProfile";
-import { fetchArtists, fetchProfile, FetchRange, fetchTracks, getAccessToken, getRefreshToken, redirectToAuthCodeFlow } from "./service/SpotifyService";
-import { ArtistSummary } from "./components/ArtistSummary";
+import { fetchArtists, fetchProfile, ItemsRange, fetchTracks, fetchAccessToken, fetchRefreshToken, redirectToAuthCodeFlow } from "./service/SpotifyService";
 import { UserSummary } from "./components/UserSummary";
 import { Track } from "./types/Tracks";
-import { TrackSummary } from "./components/TrackSummary";
 import { TopItems } from "./components/TopItems";
 
 
 export default function Home() {
 
   const [profile, setProfile] = useState<UserProfile>();
-  const [items, setItems] = useState<{ artists?: Artist[], tracks?: Track[], range?: FetchRange }>();
+  const [state, setState] = useState<Record<ItemsRange, { artists: Artist[], tracks: Track[] }>>({
+    [ItemsRange.FOUR_WEEKS]: { artists: [], tracks: [] },
+    [ItemsRange.SIX_MONTHS]: { artists: [], tracks: [] },
+    [ItemsRange.ONE_YEAR]: { artists: [], tracks: [] },
+  }
+
+  )
+  const [selectedRange, setSelectedRange] = useState<ItemsRange>(ItemsRange.FOUR_WEEKS);
 
 
   const clientId = process.env.CLIENT_ID ?? "63c3056b9f1843729d26ad0fe8a21fcf";
@@ -29,7 +34,7 @@ export default function Home() {
 
     } else {
 
-      findToken().then(t => updateProfile(t), reject => getAccessToken(clientId, code).then(async t => t,
+      findToken().then(t => updateProfile(t), reject => fetchAccessToken(clientId, code).then(async t => t,
         error => {
           redirectToAuthCodeFlow(clientId);
           return Promise.reject();
@@ -50,7 +55,7 @@ export default function Home() {
         return access_token
       }
       else {
-        return await getRefreshToken(clientId)
+        return await fetchRefreshToken(clientId)
       }
 
     }
@@ -62,29 +67,42 @@ export default function Home() {
   }
 
 
-  const updateProfile = (token: string) => {
+  const updateProfile = async (token: string) => {
     fetchProfile(token).then(p => setProfile(p))
-    fetchArtists(token, FetchRange.FOUR_WEEKS).then(a => setItems(prev => ({ ...prev, artists: a.items, range: FetchRange.FOUR_WEEKS })));
-    fetchTracks(token, FetchRange.FOUR_WEEKS).then(t => setItems(prev => ({ ...prev, tracks: t.items })))
+    updateItems(token, selectedRange);
   }
 
-  const updateItems = async (range: FetchRange) => {
-    const token = await findToken();
-    const artistsResponse = await fetchArtists(token, range);
-    const tracksResponse = await fetchTracks(token, range);
-    setItems({ artists: artistsResponse.items, tracks: tracksResponse.items, range })
+  const updateItems = async (token: string, range: ItemsRange) => {
+    setSelectedRange(range);
+    if (state[range].artists.length == 0 || state[range].tracks.length == 0) {
+      const artistsResponse = await fetchArtists(token, range);
+      const tracksResponse = await fetchTracks(token, range);
+      updateState(range, artistsResponse.items, tracksResponse.items);
+    }
 
+
+  }
+
+  const updateState = (range: ItemsRange, artists: Artist[], tracks: Track[]) => {
+    setState(prevState => ({
+      ...prevState,
+      [range]: {
+        artists,
+        tracks,
+      },
+    }));
   }
 
   return (
-    <div className="min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 ">
+    <div className="min-h-screen p-8 pb-20 gap-16 sm:p-8 font-[family-name:var(--font-geist-sans)]">
+      <main className="flex flex-col gap-8 text-lg">
 
-        {
+        <div className="mb-5">{
           profile ? <UserSummary {...profile}></UserSummary> : <></>
-        }
+        }</div>
 
-        <TopItems items={items} callback={(range: FetchRange) => updateItems(range)} />
+
+        <TopItems items={{ range: selectedRange, ...state[selectedRange] }} callback={(range: ItemsRange) => findToken().then(t => updateItems(t, range))} />
 
       </main>
       <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">

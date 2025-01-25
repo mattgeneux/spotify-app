@@ -6,13 +6,13 @@ export const UserSummary = (user: UserProfile) => {
 
         <div className="flex flex-row">
             <div className="me-5">
-                <img src={user.images[0]?.url} width="100" height="100" />
+                <img className="rounded-full" src={user.images[0]?.url} width="100" height="100" />
             </div>
             <div className="flex-col">
                 <h1>{user.display_name}
                 </h1>
                 <h2>
-                    {user.email}
+                    {user.followers.total} followers
                 </h2>
 
             </div>
